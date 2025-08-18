@@ -10,7 +10,7 @@ UPDATE_DURATION = 1
 MIN_RSSI = -60
 AIRPODS_MANUFACTURER = 76
 AIRPODS_DATA_LENGTH = 54
-RECENT_BEACONS_MAX_T_NS = 10000000000  # 10 Seconds
+RECENT_BEACONS_MAX_T_NS = 10_000_000_000  # 10 Seconds
 
 recent_beacons = []
 matching_devices = {}
@@ -54,7 +54,7 @@ def detection_callback(device, adv_data):
 async def get_device():
     scanner = BleakScanner(detection_callback)
     await scanner.start()
-    await async_sleep(3.0)  # Adjust if needed
+    await async_sleep(3.0)
     await scanner.stop()
 
     for entry in matching_devices.values():
@@ -100,7 +100,33 @@ def get_data():
     else:
         model = "unknown"
 
-    # Extract values
+    # Special handling for AirPods Max
+    if model == "AirPodsMax":
+        left_raw = int("" + chr(raw[12 if flip else 13]), 16)
+        right_raw = int("" + chr(raw[13 if flip else 12]), 16)
+
+        left_status = 100 if left_raw == 10 else (left_raw * 10 + 5 if left_raw <= 10 else -1)
+        right_status = 100 if right_raw == 10 else (right_raw * 10 + 5 if right_raw <= 10 else -1)
+
+        # Pick the more valid battery level
+        valid_levels = [b for b in [left_status, right_status] if b > 10 and b <= 100]
+        charge = max(valid_levels) if valid_levels else -1
+
+        charging_status = int("" + chr(raw[14]), 16)
+        charging_left = (charging_status & (0b00000010 if flip else 0b00000001)) != 0
+        charging_right = (charging_status & (0b00000001 if flip else 0b00000010)) != 0
+        charging = charging_left or charging_right
+
+        return dict(
+            status=1,
+            charge=charge,
+            charging=charging,
+            model=model,
+            date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            raw=raw.decode("utf-8")
+        )
+
+    # Standard AirPods (Pro, 1, 2, 3)
     left_raw = int("" + chr(raw[12 if flip else 13]), 16)
     left_status = 100 if left_raw == 10 else (left_raw * 10 + 5 if left_raw <= 10 else -1)
 
@@ -115,31 +141,20 @@ def get_data():
     charging_right = (charging_status & (0b00000001 if flip else 0b00000010)) != 0
     charging_case = (charging_status & 0b00000100) != 0
 
-    # Build output based on model
-    if model == "AirPodsMax":
-        return dict(
-            status=1,
-            charge=left_status,
-            charging=charging_left,
-            model=model,
-            date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            raw=raw.decode("utf-8")
-        )
-    else:
-        return dict(
-            status=1,
-            charge=dict(
-                left=left_status,
-                right=right_status,
-                case=case_status
-            ),
-            charging_left=charging_left,
-            charging_right=charging_right,
-            charging_case=charging_case,
-            model=model,
-            date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            raw=raw.decode("utf-8")
-        )
+    return dict(
+        status=1,
+        charge=dict(
+            left=left_status,
+            right=right_status,
+            case=case_status
+        ),
+        charging_left=charging_left,
+        charging_right=charging_right,
+        charging_case=charging_case,
+        model=model,
+        date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        raw=raw.decode("utf-8")
+    )
 
 def run():
     output_file = argv[-1]
