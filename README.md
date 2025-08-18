@@ -51,3 +51,5 @@ You can change the **update frequency** within the main.py file
 
 #### Used materials
 * Some code from [this repo](https://github.com/ohanedan/Airpods-Windows-Service)
+
+## This is a fork updated for my own personal use to work with Bleak 1.1.0/Python 3.13.
