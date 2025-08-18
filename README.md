@@ -2,7 +2,7 @@
 #### Check your AirPods battery level on Linux
 
 #### What is it?
-This is a Python 3.6 script, forked from [faglo/AirStatus](https://github.com/faglo/AirStatus) that allows you to check AirPods battery level from your terminal, as JSON output.
+This is a Python 3.13 script, forked from [faglo/AirStatus](https://github.com/faglo/AirStatus) and now secondarily forked from [delphiki/airstatus](https://github.com/delphiki/AirStatus), that allows you to check AirPods battery level from your terminal, as JSON output.
 
 ### Usage
 
@@ -52,4 +52,4 @@ You can change the **update frequency** within the main.py file
 #### Used materials
 * Some code from [this repo](https://github.com/ohanedan/Airpods-Windows-Service)
 
-## This is a fork updated for my own personal use to work with Bleak 1.1.0/Python 3.13.
+## This is a fork updated for my own personal use to work with Bleak 1.1.0/Python 3.13. Only tested on Linux.
