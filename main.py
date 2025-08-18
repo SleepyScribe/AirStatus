@@ -85,47 +85,61 @@ def get_data():
 
     flip: bool = is_flipped(raw)
 
-    if chr(raw[7]) == 'e':
+    # Detect model
+    model_char = chr(raw[7])
+    if model_char == 'e':
         model = "AirPodsPro"
-    elif chr(raw[7]) == '3':
+    elif model_char == '3':
         model = "AirPods3"
-    elif chr(raw[7]) == 'f':
+    elif model_char == 'f':
         model = "AirPods2"
-    elif chr(raw[7]) == '2':
+    elif model_char == '2':
         model = "AirPods1"
-    elif chr(raw[7]) == 'a':
+    elif model_char == 'a':
         model = "AirPodsMax"
     else:
         model = "unknown"
 
-    status_tmp = int("" + chr(raw[12 if flip else 13]), 16)
-    left_status = 100 if status_tmp == 10 else (status_tmp * 10 + 5 if status_tmp <= 10 else -1)
+    # Extract values
+    left_raw = int("" + chr(raw[12 if flip else 13]), 16)
+    left_status = 100 if left_raw == 10 else (left_raw * 10 + 5 if left_raw <= 10 else -1)
 
-    status_tmp = int("" + chr(raw[13 if flip else 12]), 16)
-    right_status = 100 if status_tmp == 10 else (status_tmp * 10 + 5 if status_tmp <= 10 else -1)
+    right_raw = int("" + chr(raw[13 if flip else 12]), 16)
+    right_status = 100 if right_raw == 10 else (right_raw * 10 + 5 if right_raw <= 10 else -1)
 
-    status_tmp = int("" + chr(raw[15]), 16)
-    case_status = 100 if status_tmp == 10 else (status_tmp * 10 + 5 if status_tmp <= 10 else -1)
+    case_raw = int("" + chr(raw[15]), 16)
+    case_status = 100 if case_raw == 10 else (case_raw * 10 + 5 if case_raw <= 10 else -1)
 
     charging_status = int("" + chr(raw[14]), 16)
     charging_left = (charging_status & (0b00000010 if flip else 0b00000001)) != 0
     charging_right = (charging_status & (0b00000001 if flip else 0b00000010)) != 0
     charging_case = (charging_status & 0b00000100) != 0
 
-    return dict(
-        status=1,
-        charge=dict(
-            left=left_status,
-            right=right_status,
-            case=case_status
-        ),
-        charging_left=charging_left,
-        charging_right=charging_right,
-        charging_case=charging_case,
-        model=model,
-        date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        raw=raw.decode("utf-8")
-    )
+    # Build output based on model
+    if model == "AirPodsMax":
+        return dict(
+            status=1,
+            charge=left_status,
+            charging=charging_left,
+            model=model,
+            date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            raw=raw.decode("utf-8")
+        )
+    else:
+        return dict(
+            status=1,
+            charge=dict(
+                left=left_status,
+                right=right_status,
+                case=case_status
+            ),
+            charging_left=charging_left,
+            charging_right=charging_right,
+            charging_case=charging_case,
+            model=model,
+            date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            raw=raw.decode("utf-8")
+        )
 
 def run():
     output_file = argv[-1]
