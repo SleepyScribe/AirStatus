@@ -157,20 +157,24 @@ def get_data():
     )
 
 def run():
-    output_file = argv[-1]
+    output_file = argv[-1] if len(argv) > 1 else None
 
-    while True:
-        data = get_data()
+    try:
+        while True:
+            data = get_data()
 
-        if data["status"] == 1:
-            json_data = dumps(data)
-            if len(argv) > 1:
-                with open(output_file, "a") as f:
-                    f.write(json_data + "\n")
-            else:
-                print(json_data)
+            if data["status"] == 1:
+                json_data = dumps(data)
+                if output_file:
+                    with open(output_file, "a") as f:
+                        f.write(json_data + "\n")
+                else:
+                    print(json_data)
 
-        sleep(UPDATE_DURATION)
+            sleep(UPDATE_DURATION)
+
+    except KeyboardInterrupt:
+        print("\n[INFO] Script interrupted.")
 
 if __name__ == '__main__':
     run()
