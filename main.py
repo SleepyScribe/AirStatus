@@ -156,6 +156,64 @@ def get_data():
         raw=raw.decode("utf-8")
     )
 
+def display_data_as_table(data: dict):
+    from rich.console import Console
+    from rich.table import Table
+    from rich.text import Text
+
+    console = Console()
+    console.clear()
+
+    table = Table(
+        title=f"AirPods Status - {data['model']} @ {data['date']}",
+        title_style="bold cyan",
+        border_style="cyan"
+    )
+
+    table.add_column("Component", style="cyan", no_wrap=True)
+    table.add_column("Battery Level", justify="center")
+    table.add_column("Charging", justify="center")
+
+    def style_battery(percent):
+        if not isinstance(percent, int) or percent < 0 or percent > 100:
+            return Text("Unknown", style="dim")
+        elif percent >= 80:
+            return Text(f"{percent}%", style="green")
+        elif percent >= 40:
+            return Text(f"{percent}%", style="yellow")
+        else:
+            return Text(f"{percent}%", style="red")
+
+    def style_charging(is_charging):
+        return Text("Yes", style="green") if is_charging else Text("No", style="red")
+
+    charge_data = data.get("charge", {})
+    model = data.get("model")
+
+    if model == "AirPodsMax":
+        charge = style_battery(charge_data if isinstance(charge_data, int) else -1)
+        charging = style_charging(data.get("charging"))
+        table.add_row("AirPods Max", charge, charging)
+
+    else:
+        table.add_row(
+            "Left Pod",
+            style_battery(charge_data.get("left", -1)),
+            style_charging(data.get("charging_left"))
+        )
+        table.add_row(
+            "Right Pod",
+            style_battery(charge_data.get("right", -1)),
+            style_charging(data.get("charging_right"))
+        )
+        table.add_row(
+            "Case",
+            style_battery(charge_data.get("case", -1)),
+            style_charging(data.get("charging_case"))
+        )
+
+    console.print(table)
+
 def run():
     output_file = argv[-1] if len(argv) > 1 else None
 
@@ -164,12 +222,11 @@ def run():
             data = get_data()
 
             if data["status"] == 1:
-                json_data = dumps(data)
                 if output_file:
                     with open(output_file, "a") as f:
-                        f.write(json_data + "\n")
+                        f.write(dumps(data) + "\n")
                 else:
-                    print(json_data)
+                    display_data_as_table(data)
 
             sleep(UPDATE_DURATION)
 
