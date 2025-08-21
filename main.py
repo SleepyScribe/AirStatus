@@ -5,6 +5,12 @@ from binascii import hexlify
 from json import dumps
 from sys import argv
 from datetime import datetime
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
+import sys
+import termios
+import atexit
 
 UPDATE_DURATION = 1
 MIN_RSSI = -60
@@ -157,9 +163,6 @@ def get_data():
     )
 
 def display_data_as_table(data: dict):
-    from rich.console import Console
-    from rich.table import Table
-    from rich.text import Text
 
     console = Console()
     console.clear()
@@ -214,8 +217,24 @@ def display_data_as_table(data: dict):
 
     console.print(table)
 
+def disable_input_and_hide_cursor():
+    fd = sys.stdin.fileno()
+    settings = termios.tcgetattr(fd)
+    new_settings = settings[:]
+    new_settings[3] = new_settings[3] & ~(termios.ECHO | termios.ICANON)  # Disable echo & canonical mode
+    termios.tcsetattr(fd, termios.TCSADRAIN, new_settings)
+    print("\033[?25l", end="", flush=True)  # Hide cursor
+
+    def restore():
+        termios.tcsetattr(fd, termios.TCSADRAIN, settings)
+        print("\033[?25h", end="", flush=True)  # Show cursor
+
+    atexit.register(restore)
+
 def run():
     output_file = argv[-1] if len(argv) > 1 else None
+
+    disable_input_and_hide_cursor()
 
     try:
         while True:
