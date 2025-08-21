@@ -168,13 +168,11 @@ def display_data_as_table(data: dict):
     console.clear()
 
     table = Table(
-        title=f"AirPods Status - {data['model']} @ {data['date']}",
-        title_style="bold cyan",
-        border_style="cyan"
+        title=f"AirPods Status - {data['model']} @ {data['date']}"
     )
 
-    table.add_column("Component", style="cyan", no_wrap=True)
-    table.add_column("Battery Level", justify="center")
+    table.add_column("Model", style="cyan", no_wrap=True)
+    table.add_column("Battery", justify="center")
     table.add_column("Charging", justify="center")
 
     def style_battery(percent):
@@ -250,7 +248,8 @@ def run():
             sleep(UPDATE_DURATION)
 
     except KeyboardInterrupt:
-        print("\n[INFO] Script interrupted.")
+        print("\033[2J\033[H", end="")
+        print("\033[?25h", end="", flush=True)
 
 if __name__ == '__main__':
     run()
